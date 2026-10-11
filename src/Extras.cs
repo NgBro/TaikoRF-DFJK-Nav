@@ -7,7 +7,7 @@ using UnityEngine;
 namespace DfjkNav;
 
 /// <summary>What an extra slot does when confirmed with F/J.</summary>
-internal enum ExtraKind { Cancel, Ok, X, Y, Menu, TabPrev, TabNext, Left, Right, Up, Down }
+internal enum ExtraKind { Cancel, Ok, X, Y, Menu, TabPrev, TabNext, Left, Right, Up, Down, Genre }
 
 internal readonly struct Extra
 {
@@ -24,13 +24,15 @@ internal readonly struct Extra
 /// </summary>
 internal static class Extras
 {
-    /// <param name="hasCursor">
-    /// A known cursor covers the screen's items. Without one, screens that poll directions (e.g. the
-    /// rewards map) get arrow slots so their content can still be scrolled.
+    /// <param name="cursor">
+    /// The screen's known cursor, or null. Without one, screens that poll directions (e.g. the rewards
+    /// map) get arrow slots so their content can still be scrolled. With an editable one, F/J on items
+    /// toggles edit mode, so the page's own confirm gets a slot.
     /// </param>
-    /// <param name="editable">F/J on items toggles edit mode, so the page's own confirm gets a slot.</param>
-    public static List<Extra> Build(bool hasCursor, bool editable)
+    public static List<Extra> Build(ICursor cursor)
     {
+        var hasCursor = cursor != null;
+        var editable = hasCursor && cursor.Editable;
         var list = new List<Extra>();
         string back = null;
         var guide = FindVisibleGuide();
@@ -61,6 +63,8 @@ internal static class Extras
                 list.Add(new Extra(ExtraKind.Down, "▼"));
             }
         }
+
+        if (SongSelectHooks.GenreAvailable(cursor)) list.Add(new Extra(ExtraKind.Genre, "Genre"));
 
         if (QueryTracker.RecentlyAsked(QueryTracker.Tab))
         {

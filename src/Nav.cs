@@ -23,6 +23,9 @@ internal static class Nav
         public bool Ok, Cancel, X, Y, Menu, TabPrev, TabNext;
         public Dir Dir;
 
+        /// <summary>A direction reported as held this frame (D/K held on a scrolling list).</summary>
+        public Dir HeldDir;
+
         /// <summary>
         /// D/F/J/K is physically down in a menu. The game has its own meanings for some of these keys
         /// (D is "Right" in song select), so menu queries must report only our intent this frame.
@@ -37,7 +40,7 @@ internal static class Nav
     private const int StepGap = 2;
     private const float AckTimeout = 0.45f;
     private const int MaxRetries = 2;
-    private const float RepeatDelay = 0.35f, RepeatInterval = 0.06f;
+    private const float RepeatDelay = 0.35f, RepeatInterval = 0.06f, ExtraRepeatInterval = 0.3f;
 
     private static int _frame = -1;
     private static Intent _intent;
@@ -64,8 +67,12 @@ internal static class Nav
     private static bool Busy => Steps.Count > 0 || _awaitingAck;
     private static Dir _dirNext = Dir.None, _dirPrev = Dir.None;
 
-    // Hold-to-repeat for D/K.
+    // Hold-to-repeat for D/K. On scrollers a hold uses the game's fast-repeat scrolling.
     private static float _holdSince, _nextRepeat;
+    private static bool _fastRepeat;
+
+    /// <summary>A held D/K is scrolling a list: report it to the game as a fast repeat.</summary>
+    internal static bool FastRepeat => _fastRepeat && !InGameplay;
 
     internal static bool InGameplay => EnsoGate.Playing;
 
@@ -116,14 +123,22 @@ internal static class Nav
         // Hold D or K to keep moving.
         var now = Time.unscaledTime;
         var repeat = false;
+        var holding = kb[Key.D].isPressed ^ kb[Key.K].isPressed;
+        var holdDelta = kb[Key.D].isPressed ? -1 : +1;
         if (prev || next) { _holdSince = now; _nextRepeat = now + RepeatDelay; }
-        else if (kb[Key.D].isPressed ^ kb[Key.K].isPressed && now >= _nextRepeat && now - _holdSince >= RepeatDelay
-                 && !Busy) // repeat no faster than the game animates
+        _fastRepeat = false;
+
+        if (holding && !prev && !next && now - _holdSince >= RepeatDelay)
         {
-            _nextRepeat = now + RepeatInterval;
-            prev = kb[Key.D].isPressed;
-            next = !prev;
-            repeat = true;
+            if (HoldScroll(holdDelta, ref result)) { /* the game scrolls on its own while "held" */ }
+            else if (now >= _nextRepeat && !Busy) // repeat no faster than the game accepts steps
+            {
+                // Slow down on the extra slots so a held key can stop on one.
+                _nextRepeat = now + (_extraFocus >= 0 || _active == null ? ExtraRepeatInterval : RepeatInterval);
+                prev = holdDelta < 0;
+                next = !prev;
+                repeat = true;
+            }
         }
 
         var any = (prev || next || ok) && !repeat;
@@ -172,11 +187,46 @@ internal static class Nav
 
         PumpSteps(ref result);
 
+        if (result.HeldDir != Dir.None && _frame % 30 == 0)
+            Plugin.L.LogInfo($"[intent] f{_frame} hold {result.HeldDir} at {_active?.CurrentIndex}");
         if (result.Any)
             Plugin.L.LogInfo($"[intent] f{_frame} ok={result.Ok} cancel={result.Cancel} dir={result.Dir}" +
                              (result.X || result.Y || result.Menu || result.TabPrev || result.TabNext
                                  ? $" x={result.X} y={result.Y} menu={result.Menu} tab={result.TabPrev}/{result.TabNext}" : ""));
         return result;
+    }
+
+    /// <summary>
+    /// D/K held on a scroller (song list): report the direction as held so the game runs its own
+    /// continuous fast scroll, until the cursor reaches the list edge where the extra slots begin.
+    /// Returns false when the normal one-step repeat should run instead.
+    /// </summary>
+    private static bool HoldScroll(int delta, ref Intent result)
+    {
+        if (_active == null || _extraFocus >= 0 || Busy || _expectIndex >= 0) return false;
+        if (_active.DirectionDelta(Dir.Down) == null) return false;
+
+        var d = delta > 0 ? _dirNext : _dirPrev;
+        if (d == Dir.None)
+        {
+            foreach (var cand in new[] { Dir.Down, Dir.Up, Dir.Right, Dir.Left })
+                if (_active.DirectionDelta(cand) == delta) { d = cand; break; }
+            if (d == Dir.None) return false;
+            if (delta > 0) _dirNext = d; else _dirPrev = d;
+        }
+
+        var n = _active.Count;
+        var idx = _active.CurrentIndex;
+        var atEdge = delta > 0 ? idx >= n - 1 : idx <= 0;
+        if (atEdge)
+        {
+            // Stop here; once the last scroll settles, the one-step repeat moves into the extras.
+            return _active.IsBusy;
+        }
+
+        result.HeldDir = d;
+        _fastRepeat = true;
+        return true;
     }
 
     private static void Fire(ExtraKind kind, ref Intent r)
@@ -194,6 +244,7 @@ internal static class Nav
             case ExtraKind.Right: r.Dir = Dir.Right; break;
             case ExtraKind.Up: r.Dir = Dir.Up; break;
             case ExtraKind.Down: r.Dir = Dir.Down; break;
+            case ExtraKind.Genre: SongSelectHooks.FocusGenres(); break;
         }
     }
 
@@ -308,10 +359,19 @@ internal static class Nav
         {
             var idx = _active?.CurrentIndex ?? _ackFrom;
             if (idx == _ackFrom && now < _ackDeadline) return;
-            // Taken: let the scroll animation finish, or the next step is dropped.
+            // Taken: let the scroll animation finish, or the next step is dropped. (A held D/K reports
+            // fast repeat, which makes the game use its shorter fast-scroll animation.)
             if (idx != _ackFrom && _active != null && _active.IsBusy && now < _ackDeadline + AckTimeout) return;
             _awaitingAck = false;
-            if (idx == _ackFrom && _active != null)
+            if (idx == _ackFrom && _active != null && _active.CanSelectDirect)
+            {
+                // Some menus only switch with other buttons (song select's store tabs use LB/RB);
+                // their model renders a direct select, so don't wait for retries.
+                Plugin.L.LogInfo($"[nav] step {_inFlight} not taken at {idx}; selecting {_expectIndex} directly");
+                Steps.Clear();
+                _active.Select(_expectIndex);
+            }
+            else if (idx == _ackFrom && _active != null)
             {
                 if (_retries++ < MaxRetries)
                 {
@@ -412,7 +472,7 @@ internal static class Nav
         ICursor chosen = (ICursor)ControllerTypeCursor.Find() ?? pick;
         SetActive(chosen);
 
-        var extras = Extras.Build(chosen != null, chosen != null && chosen.Editable);
+        var extras = Extras.Build(chosen);
         if (!SameExtras(extras))
         {
             _extras = extras;

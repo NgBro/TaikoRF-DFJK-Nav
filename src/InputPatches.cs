@@ -19,6 +19,7 @@ internal static class InputPatches
         if (!ForUs(p)) return;
         var it = Nav.Current;
         if (it.Dir != Dir.None) result = it.Dir;
+        else if (it.HeldDir != Dir.None) result = it.HeldDir;
         else if (it.Suppress) result = Dir.None;
     }
 
@@ -73,6 +74,12 @@ internal static class InputPatches
         ApplyBool(controllerPlayerNo, ref __result, Nav.Current.TabNext);
     }
 
+    [HarmonyPostfix, HarmonyPatch(nameof(ControllerManager.IsRepeatFast))]
+    static void RepeatFast(Player playerNo, ref bool __result)
+    {
+        if (ForUs(playerNo) && Nav.FastRepeat) __result = true;
+    }
+
     // Raw button queries some screens use directly; only suppress the game's own D/F/J/K meanings here.
     [HarmonyPostfix, HarmonyPatch(nameof(ControllerManager.GetButtonDown))]
     static void BtnDown(Player controllerPlayerNo, ref bool __result)
@@ -115,11 +122,16 @@ internal static class InputPatches
     [HarmonyPostfix]
     [HarmonyPatch(nameof(ControllerManager.GetDirectionRepeat), new[] { typeof(Player), typeof(bool) },
         new[] { ArgumentType.Normal, ArgumentType.Out })]
-    static void DirRepC(Player controllerPlayerNo, ref Dir __result) => ApplyDir(controllerPlayerNo, ref __result);
+    static void DirRepC(Player controllerPlayerNo, ref bool isHighSpeed, ref Dir __result)
+    {
+        ApplyDir(controllerPlayerNo, ref __result);
+        if (ForUs(controllerPlayerNo) && Nav.FastRepeat) isHighSpeed = true;
+    }
 
     [HarmonyPostfix, HarmonyPatch(nameof(ControllerManager.GetDirectionRepeatTrigger), typeof(Player), typeof(Dir))]
     static void RepTrig(Player controllerPlayerNo, Dir dir, ref bool __result)
     {
-        ApplyBool(controllerPlayerNo, ref __result, dir != Dir.None && Nav.Current.Dir == dir);
+        var it = Nav.Current;
+        ApplyBool(controllerPlayerNo, ref __result, dir != Dir.None && (it.Dir == dir || it.HeldDir == dir));
     }
 }

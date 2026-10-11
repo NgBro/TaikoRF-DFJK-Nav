@@ -31,6 +31,7 @@ public class NavBehaviour : MonoBehaviour
             Scene = name;
             ProbePatches.ResetScene();
             EnsoGate.OnSceneChanged();
+            SongSelectHooks.OnSceneChanged();
             Nav.OnSceneChanged();
         }
 
