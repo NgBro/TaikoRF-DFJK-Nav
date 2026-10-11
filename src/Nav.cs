@@ -42,7 +42,7 @@ internal static class Nav
     private static int _frame = -1;
     private static Intent _intent;
 
-    private static SelectorAccess _active;
+    private static ICursor _active;
     private static IntPtr _activeModelPtr;
     private static List<Extra> _extras = new() { new Extra(ExtraKind.Cancel, "Back") };
     private static int _extraFocus = -1; // -1 = on the game's items / screen
@@ -221,7 +221,7 @@ internal static class Nav
 
     private static void MoveCursor(int cursor, int target, int delta)
     {
-        if (_active.HasDirectionToMove)
+        if (_active.DirectionDelta(Dir.Down) != null)
         {
             var d = delta > 0 ? _dirNext : _dirPrev;
             if (d == Dir.None && !Busy && _expectIndex < 0)
@@ -230,9 +230,9 @@ internal static class Nav
                 foreach (var cand in new[] { Dir.Down, Dir.Up, Dir.Right, Dir.Left })
                 {
                     // Scrollers return a relative move (+1/-1/0); grid selectors may return the new index.
-                    var r = _active.DirectionToMove(cand);
+                    var r = _active.DirectionDelta(cand) ?? 0;
                     probe += $" {cand}={r}";
-                    if (d == Dir.None && r != 0 && (r == delta || r == target)) d = cand;
+                    if (d == Dir.None && r != 0 && r == delta) d = cand;
                 }
                 Plugin.L.LogInfo($"[nav] {_active.Name}: DirectionToMove from {cursor}:{probe}");
                 if (d != Dir.None)
@@ -249,7 +249,8 @@ internal static class Nav
         }
 
         // Free-form menu (no grid, no DirectionToMove): the model's Select drives the view directly.
-        _active.Select(target);
+        if (_active.CanSelectDirect) _active.Select(target);
+        else Plugin.L.LogWarning($"[nav] {_active.Name}: no way to move {cursor} -> {target}");
     }
 
     private static void Enqueue(Dir d, int target)
@@ -319,8 +320,7 @@ internal static class Nav
             if (at != _expectIndex)
             {
                 Plugin.L.LogWarning($"[nav] {_active.Name}: steps ended on {at}, expected {_expectIndex}");
-                // Only free-form MenuSelectors render a direct Select; scrollers would desync their view.
-                if (_active.Family == Family.Menu) _active.Select(_expectIndex);
+                if (_active.CanSelectDirect) _active.Select(_expectIndex);
             }
         }
         _expectIndex = -1;
@@ -344,9 +344,9 @@ internal static class Nav
 
     // ---- discovery -------------------------------------------------------------------------
 
-    private static void SetActive(SelectorAccess sel)
+    private static void SetActive(ICursor sel)
     {
-        var ptr = sel?.Model.Pointer ?? IntPtr.Zero;
+        var ptr = sel?.Key ?? IntPtr.Zero;
         if (ptr == _activeModelPtr) { _active = sel; return; }
         _active = sel;
         _activeModelPtr = ptr;
@@ -354,12 +354,7 @@ internal static class Nav
         _dirNext = _dirPrev = Dir.None;
         ClearSteps();
         if (sel != null)
-        {
-            var shown = "";
-            if (sel.Family == Family.Menu)
-                for (var i = 0; i < sel.Count; i++) shown += sel.IsShown(i) ? "1" : "0";
-            Plugin.L.LogInfo($"[nav] active {sel.Family} {sel.Name} ({sel.View.name}) items={sel.Count} shown={shown} grid={sel.GridSize} cur={sel.CurrentIndex}");
-        }
+            Plugin.L.LogInfo($"[nav] active {sel.Describe()}");
         else
             Plugin.L.LogInfo("[nav] no active selector");
     }
@@ -388,7 +383,9 @@ internal static class Nav
                 pickCount = count;
             }
         }
-        SetActive(pick);
+        // Screen-specific cursors that aren't MenuSelectors take over while open.
+        ICursor chosen = (ICursor)ControllerTypeCursor.Find() ?? pick;
+        SetActive(chosen);
 
         var extras = Extras.Build();
         if (!SameExtras(extras))

@@ -23,7 +23,7 @@ internal enum Family
 /// (<c>UiView&lt;TModel&gt;.Model</c>). Generic IL2CPP classes can't be named from C#, so
 /// everything goes through il2cpp reflection.
 /// </summary>
-internal sealed class SelectorAccess
+internal sealed class SelectorAccess : ICursor
 {
     private const BF Inst = BF.Instance | BF.Public | BF.NonPublic;
 
@@ -36,7 +36,7 @@ internal sealed class SelectorAccess
 
     public readonly MonoBehaviour View;
     public readonly Il2Obj Model;
-    public readonly string Name;
+    public string Name { get; }
     public readonly Family Family;
 
     private readonly Il2Type _viewBase;
@@ -195,14 +195,25 @@ internal sealed class SelectorAccess
         }
     }
 
-    public bool HasDirectionToMove => _directionToMove != null;
-
-    /// <summary>Index the game would move to for <paramref name="dir"/> (scroller/grid families only).</summary>
-    public int DirectionToMove(Dir dir)
+    /// <summary>Scroller/grid families: how far <paramref name="dir"/> moves the cursor (Down=+1, Right=+4 on songs).</summary>
+    public int? DirectionDelta(Dir dir)
     {
-        if (_directionToMove == null) return -1;
+        if (_directionToMove == null) return null;
         var r = _directionToMove.Invoke(Model, Args(BoxDir(dir)));
-        return r == null ? -1 : r.Unbox<int>();
+        return r?.Unbox<int>();
+    }
+
+    public System.IntPtr Key => Model.Pointer;
+
+    // Free-form MenuSelectors (main menu) render a direct Select; scrollers and grid cursors desync.
+    public bool CanSelectDirect => Family == Family.Menu;
+
+    public string Describe()
+    {
+        var shown = "";
+        if (Family == Family.Menu)
+            for (var i = 0; i < Count; i++) shown += IsShown(i) ? "1" : "0";
+        return $"{Family} {Name} ({View.name}) items={Count} shown={shown} grid={GridSize} cur={CurrentIndex}";
     }
 
     public void Select(int index)
