@@ -18,6 +18,8 @@ public class NavBehaviour : MonoBehaviour
         Key.Enter, Key.Space, Key.Escape, Key.Backspace,
     };
 
+    private static readonly System.Collections.Generic.List<string> Labels = new();
+
     private void Update()
     {
         Frame = Time.frameCount;
@@ -28,6 +30,7 @@ public class NavBehaviour : MonoBehaviour
             Plugin.L.LogInfo($"[scene] {Scene} -> {name}");
             Scene = name;
             ProbePatches.ResetScene();
+            EnsoGate.OnSceneChanged();
             Nav.OnSceneChanged();
         }
 
@@ -41,6 +44,10 @@ public class NavBehaviour : MonoBehaviour
         }
 
         _ = Nav.Current; // make sure selector moves happen even if the game asks nothing this frame
-        BackButton.Set(Nav.BackVisible, Nav.BackFocused);
+
+        if (!Nav.OverlayVisible) { Overlay.Show(null, -1); return; }
+        Labels.Clear();
+        foreach (var e in Nav.CurrentExtras) Labels.Add(e.Label);
+        Overlay.Show(Labels, Nav.ExtraFocus);
     }
 }

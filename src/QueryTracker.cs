@@ -1,0 +1,14 @@
+using UnityEngine;
+
+namespace DfjkNav;
+
+/// <summary>Remembers when the current screen last polled certain inputs, to decide which extras make sense.</summary>
+internal static class QueryTracker
+{
+    public const int Tab = 0;
+    private static readonly int[] LastFrame = { -1000 };
+
+    public static void Asked(int what) => LastFrame[what] = Time.frameCount;
+
+    public static bool RecentlyAsked(int what) => Time.frameCount - LastFrame[what] < 30;
+}
