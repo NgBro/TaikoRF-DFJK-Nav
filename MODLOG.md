@@ -43,10 +43,10 @@ Il2CppInterop assemblies; no game files modified besides loader drop-in (removab
 ## Tools / scratch
 - Il2CppDumper 6.7.46 output: scratchpad `dump/` (dump.cs, DummyDll/, script.json) — outside repo.
 
-## Next
-- [ ] user OK: install BepInEx into game folder, drive the game for testing
-- [ ] backup save + install BepInEx, first launch to generate interop
-- [ ] vertical slice: D/K → Dir, F/J → Ok on main menu, log every ControllerManager query per scene
+## Decisions (user)
+- BepInEx install OK; agent may drive the game; offline only.
+- Song select: extra slots at the list's wrap point (Back, Playlist, Genre, tabs); hold D/K = fast scroll.
+- Value items: F/J enters edit mode, D/K adjust, F/J done.
 
 ## 2026-10-11 — vertical slice working (main menu + title)
 - Installed BepInEx 6.0.0-be.788 (IL2CPP win-x64) into game folder; first run generated 113 interop dlls.
@@ -70,3 +70,34 @@ Il2CppInterop assemblies; no game files modified besides loader drop-in (removab
 ### Test loop
 scratchpad `restart.sh` (kill by PID, build+deploy, steam -applaunch) → `to_mainmenu.sh` → `um win drive` keys
 (D 0x44, F 0x46, J 0x4A, K 0x4B) → `um win shot --scale 0.33` + grep BepInEx/LogOutput.log.
+
+## 2026-10-11 — feature complete for the main flows
+Verified in game (v3.2.0): Title, MainMenu, Rewards Map, player count, Thunder Shrine, controller-type popup,
+SongSelect (songs, hold-scroll, Genre column, store tabs), difficulty select, Enso pause menu, rewards dialog,
+results (extras = Back to Start / Omiko City / Retry / Improvement Support), My Room, Outfits (4x7 grid + tabs),
+Game Settings, Volume edit mode (changed and restored; left via Cancel). Drum hits during songs still reach
+`EnsoInput.UpdateController` (F DonL, J DonR, D KatsuL, K KatsuR).
+
+### Engine facts learned
+- Families: MenuSelector<T> (view UiMenuSelector`3), InfiniteScroller<T> (UiInfiniteScroller`3: songs,
+  genres), ScrollableGridSelector<T> (UiScrollableGridSelector`3: settings list, shop). Customize menus and
+  dialogs (ConfirmationWindow, ...) are MenuSelector subclasses.
+- Scrollers expose `DirectionToMove(Dir)` = relative move (songs: Down +1, Up -1, Right +4, Left -4).
+- `Select(int)` on a scroller changes the model but not the view: never use it there. MenuSelector.Select(T)
+  renders correctly on the free-form main menu; grid MenuSelectors (player count) ignore it visually.
+- Selectors drop input while animating: wait for index change, then `SongScroller.IsAnimating` /
+  `UiSongScroller.IsScrolling` false. Native hold-scroll = report the direction as held every frame
+  (+ `IsRepeatFast` true); GetDirectionRepeat only fires once on a held key.
+- Some selectors never set Opened (ThunderShrineSelector): pick by Focus, tie-break Opened then Count
+  (song select keeps ThemeSelector (3 tabs) focused next to the song list).
+- PlayerNumberSelector keeps 3P/4P in ItemList: reachability = view `Buttons[i].activeInHierarchy`.
+- Vanilla keyboard: D = Right in song select (WASD); D/F/J/K otherwise unused in menus.
+- Genre column: `SongSelectThunderShrineSceneObjects.uiController.SetFocus(Focuses.Filters)`.
+- Controller-type popup: `UiControllerTypeSelector` (IsOpen, buttons[0].isTatacon) — Right/Left toggles.
+- Gameplay gate: `EnsoGameManager.state` (Exec < ToResult) + `UiPauseMenu.isActiveAndEnabled`.
+- The game was never windowed: its own display setting wins over `-screen-*` args; registry untouched
+  (backup in backups/taiko-registry.reg anyway).
+
+### Side effects on the user's save from testing
+Played MASEIJIN (Easy) 2x without hitting (fails; +coins/points), song select genre left on POP,
+tab Library. Volume unchanged (edited, then Cancel).

@@ -27,7 +27,7 @@ public class NavBehaviour : MonoBehaviour
         var name = SceneManager.GetActiveScene().name;
         if (name != Scene)
         {
-            Plugin.L.LogInfo($"[scene] {Scene} -> {name}");
+            Plugin.Dbg($"[scene] {Scene} -> {name}");
             Scene = name;
             ProbePatches.ResetScene();
             EnsoGate.OnSceneChanged();

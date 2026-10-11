@@ -112,19 +112,19 @@ internal static class Nav
         var kb = Keyboard.current;
         if (kb == null) return result;
 
-        result.Suppress = kb[Key.D].isPressed || kb[Key.F].isPressed || kb[Key.J].isPressed || kb[Key.K].isPressed
-                          || kb[Key.D].wasReleasedThisFrame || kb[Key.F].wasReleasedThisFrame
-                          || kb[Key.J].wasReleasedThisFrame || kb[Key.K].wasReleasedThisFrame;
+        result.Suppress = kb[Plugin.PrevKey].isPressed || kb[Plugin.ConfirmKey].isPressed || kb[Plugin.Confirm2Key].isPressed || kb[Plugin.NextKey].isPressed
+                          || kb[Plugin.PrevKey].wasReleasedThisFrame || kb[Plugin.ConfirmKey].wasReleasedThisFrame
+                          || kb[Plugin.Confirm2Key].wasReleasedThisFrame || kb[Plugin.NextKey].wasReleasedThisFrame;
 
-        var prev = kb[Key.D].wasPressedThisFrame;
-        var next = kb[Key.K].wasPressedThisFrame;
-        var ok = kb[Key.F].wasPressedThisFrame || kb[Key.J].wasPressedThisFrame;
+        var prev = kb[Plugin.PrevKey].wasPressedThisFrame;
+        var next = kb[Plugin.NextKey].wasPressedThisFrame;
+        var ok = kb[Plugin.ConfirmKey].wasPressedThisFrame || kb[Plugin.Confirm2Key].wasPressedThisFrame;
 
         // Hold D or K to keep moving.
         var now = Time.unscaledTime;
         var repeat = false;
-        var holding = kb[Key.D].isPressed ^ kb[Key.K].isPressed;
-        var holdDelta = kb[Key.D].isPressed ? -1 : +1;
+        var holding = kb[Plugin.PrevKey].isPressed ^ kb[Plugin.NextKey].isPressed;
+        var holdDelta = kb[Plugin.PrevKey].isPressed ? -1 : +1;
         if (prev || next) { _holdSince = now; _nextRepeat = now + RepeatDelay; }
         _fastRepeat = false;
 
@@ -160,12 +160,12 @@ internal static class Nav
             if (_editing)
             {
                 _editing = false;
-                Plugin.L.LogInfo($"[nav] f{_frame} edit done");
+                Plugin.Dbg($"[nav] f{_frame} edit done");
             }
             else if (_extraFocus < 0 && _active != null && _active.Editable && !Busy && _expectIndex < 0)
             {
                 _editing = true;
-                Plugin.L.LogInfo($"[nav] f{_frame} editing item {_active.CurrentIndex}");
+                Plugin.Dbg($"[nav] f{_frame} editing item {_active.CurrentIndex}");
             }
             else if (_extraFocus >= 0 && _extraFocus < _extras.Count)
             {
@@ -173,7 +173,7 @@ internal static class Nav
                 if (!e.IsDirection) _extraFocus = -1; // arrows stay focused so F/J can be tapped repeatedly
                 ClearSteps();
                 Fire(e.Kind, ref result);
-                Plugin.L.LogInfo($"[nav] f{_frame} extra {e.Kind} \"{e.Label}\"");
+                Plugin.Dbg($"[nav] f{_frame} extra {e.Kind} \"{e.Label}\"");
             }
             else if (Busy || _expectIndex >= 0)
             {
@@ -188,9 +188,9 @@ internal static class Nav
         PumpSteps(ref result);
 
         if (result.HeldDir != Dir.None && _frame % 30 == 0)
-            Plugin.L.LogInfo($"[intent] f{_frame} hold {result.HeldDir} at {_active?.CurrentIndex}");
+            Plugin.Dbg($"[intent] f{_frame} hold {result.HeldDir} at {_active?.CurrentIndex}");
         if (result.Any)
-            Plugin.L.LogInfo($"[intent] f{_frame} ok={result.Ok} cancel={result.Cancel} dir={result.Dir}" +
+            Plugin.Dbg($"[intent] f{_frame} ok={result.Ok} cancel={result.Cancel} dir={result.Dir}" +
                              (result.X || result.Y || result.Menu || result.TabPrev || result.TabNext
                                  ? $" x={result.X} y={result.Y} menu={result.Menu} tab={result.TabPrev}/{result.TabNext}" : ""));
         return result;
@@ -261,7 +261,7 @@ internal static class Nav
             var from = _extraFocus + 1;
             var to = ((from + delta) % slots + slots) % slots;
             _extraFocus = to - 1;
-            Plugin.L.LogInfo($"[nav] screen ring: {from} -> {to} ({(to == 0 ? "screen" : _extras[to - 1].Label)})");
+            Plugin.Dbg($"[nav] screen ring: {from} -> {to} ({(to == 0 ? "screen" : _extras[to - 1].Label)})");
             return;
         }
 
@@ -279,7 +279,7 @@ internal static class Nav
             if (target >= n || _active.IsShown(target)) break;
         }
 
-        Plugin.L.LogInfo($"[nav] {_active.Name}: {Slot(start, n)} -> {Slot(target, n)}");
+        Plugin.Dbg($"[nav] {_active.Name}: {Slot(start, n)} -> {Slot(target, n)}");
 
         if (target >= n)
         {
@@ -309,11 +309,11 @@ internal static class Nav
                     probe += $" {cand}={r}";
                     if (d == Dir.None && r != 0 && r == delta) d = cand;
                 }
-                Plugin.L.LogInfo($"[nav] {_active.Name}: DirectionToMove from {cursor}:{probe}");
+                Plugin.Dbg($"[nav] {_active.Name}: DirectionToMove from {cursor}:{probe}");
                 if (d != Dir.None)
                 {
                     if (delta > 0) _dirNext = d; else _dirPrev = d;
-                    Plugin.L.LogInfo($"[nav] {_active.Name}: {(delta > 0 ? "next" : "prev")} = {d}");
+                    Plugin.Dbg($"[nav] {_active.Name}: {(delta > 0 ? "next" : "prev")} = {d}");
                 }
             }
             if (d != Dir.None) { Enqueue(d, target); return; }
@@ -367,7 +367,7 @@ internal static class Nav
             {
                 // Some menus only switch with other buttons (song select's store tabs use LB/RB);
                 // their model renders a direct select, so don't wait for retries.
-                Plugin.L.LogInfo($"[nav] step {_inFlight} not taken at {idx}; selecting {_expectIndex} directly");
+                Plugin.Dbg($"[nav] step {_inFlight} not taken at {idx}; selecting {_expectIndex} directly");
                 Steps.Clear();
                 _active.Select(_expectIndex);
             }
@@ -375,7 +375,7 @@ internal static class Nav
             {
                 if (_retries++ < MaxRetries)
                 {
-                    Plugin.L.LogInfo($"[nav] step {_inFlight} not taken at {idx}; retrying");
+                    Plugin.Dbg($"[nav] step {_inFlight} not taken at {idx}; retrying");
                     Steps.Insert(0, _inFlight);
                 }
                 else Plugin.L.LogWarning($"[nav] step {_inFlight} not taken at {idx}; giving up");
@@ -439,9 +439,9 @@ internal static class Nav
         _dirNext = _dirPrev = Dir.None;
         ClearSteps();
         if (sel != null)
-            Plugin.L.LogInfo($"[nav] active {sel.Describe()}");
+            Plugin.Dbg($"[nav] active {sel.Describe()}");
         else
-            Plugin.L.LogInfo("[nav] no active selector");
+            Plugin.Dbg("[nav] no active selector");
     }
 
     private static void Scan(bool verbose)
@@ -456,7 +456,7 @@ internal static class Nav
             var focused = s.IsFocused;
             var opened = s.IsOpened;
             if (verbose)
-                Plugin.L.LogInfo($"[sel] {s.Family} {s.Name} view={s.View.name} focus={focused} opened={opened} n={s.Count}");
+                Plugin.Dbg($"[sel] {s.Family} {s.Name} view={s.View.name} focus={focused} opened={opened} n={s.Count}");
             // Some selectors never flip Opened (Thunder Shrine's), so Focus decides. Ties: an opened one,
             // then the longer list (song select keeps its 3 store tabs focused next to the song list).
             if (!focused) continue;
@@ -479,10 +479,10 @@ internal static class Nav
             if (_extraFocus >= _extras.Count) _extraFocus = -1;
             var labels = new List<string>();
             foreach (var x in extras) labels.Add($"{x.Kind}:{x.Label}");
-            Plugin.L.LogInfo($"[nav] extras: {string.Join(", ", labels)}");
+            Plugin.Dbg($"[nav] extras: {string.Join(", ", labels)}");
         }
         if (verbose)
-            Plugin.L.LogInfo($"[sel] scan {all.Count} selectors in {sw.Elapsed.TotalMilliseconds:F1} ms");
+            Plugin.Dbg($"[sel] scan {all.Count} selectors in {sw.Elapsed.TotalMilliseconds:F1} ms");
     }
 
     private static bool SameExtras(List<Extra> other)

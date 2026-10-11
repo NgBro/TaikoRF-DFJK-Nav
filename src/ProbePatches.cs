@@ -130,3 +130,15 @@ internal static class ProbePatches
     static void Mouse(ControllerManager.MouseButton button, bool __result)
         => Report($"GetMouseButtonDown({button})", __result);
 }
+
+// Read-only: confirms drum hits still reach gameplay with the mod installed.
+[HarmonyPatch(typeof(EnsoInput))]
+internal static class EnsoProbe
+{
+    [HarmonyPostfix, HarmonyPatch(nameof(EnsoInput.UpdateController))]
+    static void UpdateController(int player, EnsoInput.EnsoInputFlag __result)
+    {
+        if (__result != 0) Plugin.L.LogInfo($"[enso] f{NavBehaviour.Frame} p{player} {__result}");
+    }
+}
+
