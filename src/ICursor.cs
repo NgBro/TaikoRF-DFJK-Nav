@@ -24,6 +24,9 @@ internal interface ICursor
     bool CanSelectDirect { get; }
     void Select(int index);
     string Describe();
+
+    /// <summary>Items change a value with left/right (sliders, option pickers): F/J toggles edit mode.</summary>
+    bool Editable { get; }
 }
 
 /// <summary>
@@ -72,4 +75,5 @@ internal sealed class ControllerTypeCursor : ICursor
     public bool CanSelectDirect => false;
     public void Select(int index) { }
     public string Describe() => $"ControllerType tatacon={_btn.isTatacon}";
+    public bool Editable => false;
 }

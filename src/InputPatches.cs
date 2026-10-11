@@ -93,10 +93,18 @@ internal static class InputPatches
     static void DirBtnB(Player controllerPlayerNo, ref Dir __result) => ApplyDir(controllerPlayerNo, ref __result);
 
     [HarmonyPostfix, HarmonyPatch(nameof(ControllerManager.GetDirectionDown), typeof(Player), typeof(Prio), typeof(bool))]
-    static void DirDownA(Player controllerPlayerNo, ref Dir __result) => ApplyDir(controllerPlayerNo, ref __result);
+    static void DirDownA(Player controllerPlayerNo, ref Dir __result)
+    {
+        QueryTracker.AskedDir(LRType.None);
+        ApplyDir(controllerPlayerNo, ref __result);
+    }
 
     [HarmonyPostfix, HarmonyPatch(nameof(ControllerManager.GetDirectionDown), typeof(Player), typeof(Prio), typeof(LRType))]
-    static void DirDownB(Player controllerPlayerNo, ref Dir __result) => ApplyDir(controllerPlayerNo, ref __result);
+    static void DirDownB(Player controllerPlayerNo, LRType LRType, ref Dir __result)
+    {
+        QueryTracker.AskedDir(LRType);
+        ApplyDir(controllerPlayerNo, ref __result);
+    }
 
     [HarmonyPostfix, HarmonyPatch(nameof(ControllerManager.GetDirectionRepeat), typeof(Player))]
     static void DirRepA(Player controllerPlayerNo, ref Dir __result) => ApplyDir(controllerPlayerNo, ref __result);

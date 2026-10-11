@@ -6,16 +6,19 @@ using UnityEngine.UI;
 namespace DfjkNav;
 
 /// <summary>
-/// The injected on-screen slots (Back + extra actions), drawn as a row of chips just above the
-/// game's own bottom input guide. Pure uGUI built at runtime; no game assets.
+/// The injected on-screen slots (Back + extra actions), drawn as a row of chips on a dark strip over
+/// the left of the game's bottom input guide. The guide's keyboard hints don't help a D/F/J/K player,
+/// and the chips carry the same captions. Pure uGUI built at runtime; no game assets.
 /// </summary>
 internal static class Overlay
 {
-    private const float RowLeft = 28f, RowBottom = 100f, ChipHeight = 54f, Gap = 12f, PadX = 26f;
+    private const float RowLeft = 18f, RowBottom = 12f, ChipHeight = 48f, Gap = 10f, PadX = 22f, StripPad = 10f;
 
-    private static readonly Color BgIdle = new(0f, 0f, 0f, 0.55f);
+    private static readonly Color StripColor = new(0.08f, 0.08f, 0.1f, 0.88f);
+    private static readonly Color BgIdle = new(1f, 1f, 1f, 0.12f);
     private static readonly Color BgFocus = new(1f, 0.82f, 0.1f, 1f);
-    private static readonly Color TextIdle = new(1f, 1f, 1f, 0.9f);
+    private static readonly Color BgEdit = new(0.35f, 0.85f, 1f, 1f);
+    private static readonly Color TextIdle = new(1f, 1f, 1f, 0.92f);
 
     private sealed class Chip
     {
@@ -25,6 +28,7 @@ internal static class Overlay
     }
 
     private static GameObject _root;
+    private static RectTransform _strip;
     private static Font _font;
     private static readonly List<Chip> Chips = new();
     private static string _shownKey = "";
@@ -41,6 +45,15 @@ internal static class Overlay
         scaler.referenceResolution = new Vector2(1920, 1080);
         scaler.matchWidthOrHeight = 0.5f;
         _font = Resources.GetBuiltinResource(Il2CppType.Of<Font>(), "LegacyRuntime.ttf").Cast<Font>();
+
+        var strip = new GameObject("Strip");
+        strip.transform.SetParent(_root.transform, false);
+        _strip = strip.AddComponent<RectTransform>();
+        _strip.anchorMin = _strip.anchorMax = Vector2.zero;
+        _strip.pivot = Vector2.zero;
+        var img = strip.AddComponent<Image>();
+        img.color = StripColor;
+        img.raycastTarget = false;
     }
 
     private static Chip NewChip()
@@ -49,7 +62,7 @@ internal static class Overlay
         go.transform.SetParent(_root.transform, false);
         var c = new Chip { Rect = go.AddComponent<RectTransform>(), Bg = go.AddComponent<Image>() };
         c.Rect.anchorMin = c.Rect.anchorMax = Vector2.zero;
-        c.Rect.pivot = new Vector2(0.5f, 0f);
+        c.Rect.pivot = new Vector2(0.5f, 0.5f);
         c.Bg.raycastTarget = false;
 
         var txt = new GameObject("Label");
@@ -60,7 +73,7 @@ internal static class Overlay
         tr.offsetMin = tr.offsetMax = Vector2.zero;
         c.Label = txt.AddComponent<Text>();
         c.Label.font = _font;
-        c.Label.fontSize = 30;
+        c.Label.fontSize = 27;
         c.Label.fontStyle = FontStyle.Bold;
         c.Label.alignment = TextAnchor.MiddleCenter;
         c.Label.horizontalOverflow = HorizontalWrapMode.Overflow;
@@ -70,7 +83,8 @@ internal static class Overlay
 
     /// <param name="labels">Chip captions in ring order; null or empty hides the row.</param>
     /// <param name="focused">Index of the focused chip, or -1.</param>
-    public static void Show(IReadOnlyList<string> labels, int focused)
+    /// <param name="editing">Edit-mode hint instead of slots.</param>
+    public static void Show(IReadOnlyList<string> labels, int focused, bool editing = false)
     {
         if (_root == null)
         {
@@ -78,12 +92,13 @@ internal static class Overlay
             catch (System.Exception e) { Plugin.L.LogError($"[overlay] build failed: {e}"); return; }
         }
 
-        var key = labels == null ? "" : string.Join("|", labels) + "#" + focused;
+        var key = labels == null ? "" : string.Join("|", labels) + "#" + focused + (editing ? "e" : "");
         if (key == _shownKey) return;
         _shownKey = key;
 
         var n = labels?.Count ?? 0;
         while (Chips.Count < n) Chips.Add(NewChip());
+        _strip.gameObject.SetActive(n > 0);
 
         var x = RowLeft;
         for (var i = 0; i < Chips.Count; i++)
@@ -94,14 +109,17 @@ internal static class Overlay
             if (!on) continue;
 
             var isFocus = i == focused;
-            c.Label.text = i == 0 ? "◀  " + labels[i] : labels[i];
-            var w = Mathf.Max(150f, c.Label.preferredWidth + PadX * 2);
+            c.Label.text = i == 0 && !editing ? "◀ " + labels[i] : labels[i];
+            var w = Mathf.Max(110f, c.Label.preferredWidth + PadX * 2);
             c.Rect.sizeDelta = new Vector2(w, ChipHeight);
-            c.Rect.anchoredPosition = new Vector2(x + w / 2f, RowBottom);
-            c.Rect.localScale = isFocus ? new Vector3(1.12f, 1.12f, 1f) : Vector3.one;
-            c.Bg.color = isFocus ? BgFocus : BgIdle;
+            c.Rect.anchoredPosition = new Vector2(x + w / 2f, RowBottom + ChipHeight / 2f);
+            c.Rect.localScale = isFocus && !editing ? new Vector3(1.08f, 1.08f, 1f) : Vector3.one;
+            c.Bg.color = isFocus ? (editing ? BgEdit : BgFocus) : BgIdle;
             c.Label.color = isFocus ? Color.black : TextIdle;
             x += w + Gap;
         }
+
+        _strip.anchoredPosition = new Vector2(0f, RowBottom - StripPad);
+        _strip.sizeDelta = new Vector2(x - Gap + RowLeft, ChipHeight + StripPad * 2);
     }
 }

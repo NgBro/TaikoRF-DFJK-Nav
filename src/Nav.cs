@@ -46,6 +46,8 @@ internal static class Nav
     private static IntPtr _activeModelPtr;
     private static List<Extra> _extras = new() { new Extra(ExtraKind.Cancel, "Back") };
     private static int _extraFocus = -1; // -1 = on the game's items / screen
+    private static bool _editing;        // D/K adjust the focused item's value
+    private static Dir _editDir;
     private static float _nextScan;
 
     // Native direction steps still to feed the game, and the index they should end on.
@@ -70,11 +72,13 @@ internal static class Nav
     internal static bool OverlayVisible => !InGameplay;
     internal static IReadOnlyList<Extra> CurrentExtras => _extras;
     internal static int ExtraFocus => InGameplay ? -1 : _extraFocus;
+    internal static bool Editing => !InGameplay && _editing && _active != null;
 
     public static void OnSceneChanged()
     {
         SetActive(null);
         _extraFocus = -1;
+        _editing = false;
     }
 
     public static Intent Current
@@ -129,14 +133,29 @@ internal static class Nav
             Scan(any && Plugin.Probe.Value);
         }
 
-        if (prev ^ next) Move(next ? +1 : -1);
+        if (prev ^ next)
+        {
+            if (_editing && _active != null) _editDir = next ? Dir.Right : Dir.Left;
+            else Move(next ? +1 : -1);
+        }
+        if (_editDir != Dir.None) { result.Dir = _editDir; _editDir = Dir.None; }
 
         if (ok)
         {
-            if (_extraFocus >= 0 && _extraFocus < _extras.Count)
+            if (_editing)
+            {
+                _editing = false;
+                Plugin.L.LogInfo($"[nav] f{_frame} edit done");
+            }
+            else if (_extraFocus < 0 && _active != null && _active.Editable && !Busy && _expectIndex < 0)
+            {
+                _editing = true;
+                Plugin.L.LogInfo($"[nav] f{_frame} editing item {_active.CurrentIndex}");
+            }
+            else if (_extraFocus >= 0 && _extraFocus < _extras.Count)
             {
                 var e = _extras[_extraFocus];
-                _extraFocus = -1;
+                if (!e.IsDirection) _extraFocus = -1; // arrows stay focused so F/J can be tapped repeatedly
                 ClearSteps();
                 Fire(e.Kind, ref result);
                 Plugin.L.LogInfo($"[nav] f{_frame} extra {e.Kind} \"{e.Label}\"");
@@ -165,11 +184,16 @@ internal static class Nav
         switch (kind)
         {
             case ExtraKind.Cancel: r.Cancel = true; break;
+            case ExtraKind.Ok: r.Ok = true; break;
             case ExtraKind.X: r.X = true; break;
             case ExtraKind.Y: r.Y = true; break;
             case ExtraKind.Menu: r.Menu = true; break;
             case ExtraKind.TabPrev: r.TabPrev = true; break;
             case ExtraKind.TabNext: r.TabNext = true; break;
+            case ExtraKind.Left: r.Dir = Dir.Left; break;
+            case ExtraKind.Right: r.Dir = Dir.Right; break;
+            case ExtraKind.Up: r.Dir = Dir.Up; break;
+            case ExtraKind.Down: r.Dir = Dir.Down; break;
         }
     }
 
@@ -351,6 +375,7 @@ internal static class Nav
         _active = sel;
         _activeModelPtr = ptr;
         _extraFocus = -1;
+        _editing = false;
         _dirNext = _dirPrev = Dir.None;
         ClearSteps();
         if (sel != null)
@@ -387,7 +412,7 @@ internal static class Nav
         ICursor chosen = (ICursor)ControllerTypeCursor.Find() ?? pick;
         SetActive(chosen);
 
-        var extras = Extras.Build();
+        var extras = Extras.Build(chosen != null, chosen != null && chosen.Editable);
         if (!SameExtras(extras))
         {
             _extras = extras;

@@ -205,6 +205,25 @@ internal sealed class SelectorAccess : ICursor
 
     public System.IntPtr Key => Model.Pointer;
 
+    // Selectors whose items are adjusted with left/right rather than picked.
+    private static readonly HashSet<string> EditableNames = new()
+    {
+        "VolumeSelector", "NoteAdjustmentSelector", "GraphicSettingSelector", "OnlineOptionSelector",
+        "DiffOption", "TwoPlayerOption", "TrainingOptionWindow", "WarNpcSetting", "TimingDelaySelector",
+        "RoomCreateMenu", "RoomQuickCreateMenu", "RoomSearchFilterMenu", "OnlineRankCustomizeSelector",
+    };
+
+    private bool? _editable;
+
+    public bool Editable => _editable ??= ComputeEditable();
+
+    private bool ComputeEditable()
+    {
+        for (var t = Model.GetIl2CppType(); t != null; t = t.BaseType)
+            if (EditableNames.Contains(t.Name) || t.Name == "ContentChangableSelector`2") return true;
+        return false;
+    }
+
     // Free-form MenuSelectors (main menu) render a direct Select; scrollers and grid cursors desync.
     public bool CanSelectDirect => Family == Family.Menu;
 
@@ -213,7 +232,8 @@ internal sealed class SelectorAccess : ICursor
         var shown = "";
         if (Family == Family.Menu)
             for (var i = 0; i < Count; i++) shown += IsShown(i) ? "1" : "0";
-        return $"{Family} {Name} ({View.name}) items={Count} shown={shown} grid={GridSize} cur={CurrentIndex}";
+        return $"{Family} {Name} ({View.name}) items={Count} shown={shown} grid={GridSize} cur={CurrentIndex}" +
+               (Editable ? " editable" : "");
     }
 
     public void Select(int index)

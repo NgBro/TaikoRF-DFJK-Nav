@@ -47,6 +47,13 @@ public class NavBehaviour : MonoBehaviour
 
         if (!Nav.OverlayVisible) { Overlay.Show(null, -1); return; }
         Labels.Clear();
+        if (Nav.Editing)
+        {
+            Labels.Add("D ◀  adjust  ▶ K");
+            Labels.Add("F/J: done");
+            Overlay.Show(Labels, 0, editing: true);
+            return;
+        }
         foreach (var e in Nav.CurrentExtras) Labels.Add(e.Label);
         Overlay.Show(Labels, Nav.ExtraFocus);
     }
