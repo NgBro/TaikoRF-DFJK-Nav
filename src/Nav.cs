@@ -50,7 +50,7 @@ internal static class Nav
     private static List<Extra> _extras = new() { new Extra(ExtraKind.Cancel, "Back") };
     private static int _extraFocus = -1; // -1 = on the game's items / screen
     private static bool _editing;        // D/K adjust the focused item's value
-    private static Dir _editDir;
+    private static Dir _directDir;       // one native press to send this frame (edit mode, linear edges)
     private static float _nextScan;
 
     // Native direction steps still to feed the game, and the index they should end on.
@@ -150,10 +150,10 @@ internal static class Nav
 
         if (prev ^ next)
         {
-            if (_editing && _active != null) _editDir = next ? Dir.Right : Dir.Left;
+            if (_editing && _active != null) _directDir = next ? Dir.Right : Dir.Left;
             else Move(next ? +1 : -1);
         }
-        if (_editDir != Dir.None) { result.Dir = _editDir; _editDir = Dir.None; }
+        if (_directDir != Dir.None) { result.Dir = _directDir; _directDir = Dir.None; }
 
         if (back)
         {
@@ -284,6 +284,8 @@ internal static class Nav
         var n = _active.Count;
         if (n <= 0) { _extraFocus = _extraFocus < 0 ? 0 : -1; return; }
 
+        if (_active.Linear) { MoveLinear(delta, e); return; }
+
         var total = n + e;
         // Where the game's cursor is (or will be once queued steps land).
         var cursor = _expectIndex >= 0 ? _expectIndex : _active.CurrentIndex;
@@ -306,6 +308,41 @@ internal static class Nav
         _extraFocus = -1;
         if (target == cursor) return;
         MoveCursor(cursor, target, delta);
+    }
+
+    /// <summary>
+    /// Line layout: [extras] [items]. Left of the first item are the extras (nearest first); the right end
+    /// keeps sending native Right so the game's own extra-press features still work. Items are moved
+    /// with native Left/Right only, since hidden/switching items (Ura) make index planning unreliable.
+    /// </summary>
+    private static void MoveLinear(int delta, int e)
+    {
+        if (_extraFocus >= 0)
+        {
+            if (delta < 0)
+            {
+                if (_extraFocus > 0) _extraFocus--;
+            }
+            else
+            {
+                _extraFocus = _extraFocus < e - 1 ? _extraFocus + 1 : -1; // past the last extra: back on the items
+            }
+            Plugin.Dbg($"[nav] {_active.Name} line: extra {(_extraFocus < 0 ? "-> items" : _extras[_extraFocus].Label)}");
+            return;
+        }
+
+        var cur = _active.CurrentIndex;
+        var first = 0;
+        while (first < _active.Count - 1 && !_active.IsShown(first)) first++;
+        if (delta < 0 && cur <= first)
+        {
+            _extraFocus = e - 1;
+            Plugin.Dbg($"[nav] {_active.Name} line: {cur} -> {_extras[_extraFocus].Label}");
+            return;
+        }
+
+        _directDir = delta > 0 ? Dir.Right : Dir.Left;
+        Plugin.Dbg($"[nav] {_active.Name} line: {cur} {_directDir}");
     }
 
     private static string Slot(int s, int n) => s < n ? s.ToString() : _extras[s - n].Label;

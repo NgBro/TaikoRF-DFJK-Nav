@@ -23,6 +23,9 @@ results all work with **D F J K**. Songs are unchanged: during play the keys are
   so the extras are easy to land on. *Genre* moves focus to the genre column. Pick a genre with J.
   F on the song list does what the game's own back does there: the first press moves to the genre
   column, and a second press leaves song select.
+- **Difficulty select** is a line, not a ring. D past Easy goes to the extras (Play Options,
+  Control Type, Back), and K walks back to Easy. K on Extreme keeps pressing Right, so pressing it
+  repeatedly (or holding it) switches to the hidden Ura chart on songs that have one.
 - **Settings with values** (volume sliders, play options, calibration): J on the item starts
   editing, D/K lower or raise the value, and J or F finishes. The page's own confirm (e.g. *Confirm and
   Close*) is an extra slot.
@@ -67,8 +70,6 @@ Edit `BepInEx\config\dfjk.nav.cfg` (created on first start):
 
 - **Opening the pause menu mid-song still needs Esc.** During a song D/F/J/K are drum hits.
 - **Typing (song search by name, player name) needs a keyboard.**
-- **The hidden Ura difficulty can't be revealed:** it's unlocked with extra presses the ring doesn't
-  produce.
 - **Online modes were not tested.** Treat any mod as a risk on online servers; consider setting
   `Enabled = false` before playing online.
 - **Which settings use edit mode is decided from a list of the game's option menus.** A new option

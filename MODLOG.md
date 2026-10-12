@@ -107,3 +107,11 @@ Large lists (400+ songs) made the wrap-point Back slow to reach. Keys now: J = c
 (config `[Keys] Confirm` / `Back`; old `Confirm2` removed, user cfg migrated by hand). F sends Cancel from
 anywhere, finishes edit mode while editing, and clears pending cursor steps. Verified: song list F ->
 genre column (native cancel behaviour), F again -> Thunder Shrine. Edit-mode F not re-tested in game.
+
+## 2026-10-11 — difficulty select as a line (user request)
+`DiffSelectBase` subclasses (1P/2P/Network/Training/NinjaDojo/War) use `ICursor.Linear`: extras left of the
+first shown item (nearest first, stop at Back, no wrap), items moved with native Left/Right only, and K at
+the right end keeps sending Right (Ura switch: `DiffSelectBase.HasUra/IsUra/CanSwitchUra/OnUraSwitch`).
+Verified: K Easy->Extreme, extra K = Right passes through; D Extreme->Easy->Play Options->Control Type->Back
+(stops), K back to items. Ura toggle itself not confirmed visually: the user was playing at the same time
+and closed the panel. Song with Ura in this library: found at song-list step 6 (Taiko Music Pass tab).

@@ -27,6 +27,12 @@ internal interface ICursor
 
     /// <summary>Items change a value with left/right (sliders, option pickers): confirm toggles edit mode.</summary>
     bool Editable { get; }
+
+    /// <summary>
+    /// A line instead of a ring: extras sit before the first item, and moving past the last item sends the
+    /// game's own direction (difficulty select: extra Right presses on Extreme switch to Ura).
+    /// </summary>
+    bool Linear { get; }
 }
 
 /// <summary>
@@ -76,4 +82,5 @@ internal sealed class ControllerTypeCursor : ICursor
     public void Select(int index) { }
     public string Describe() => $"ControllerType tatacon={_btn.isTatacon}";
     public bool Editable => false;
+    public bool Linear => false;
 }

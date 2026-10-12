@@ -213,7 +213,22 @@ internal sealed class SelectorAccess : ICursor
         "RoomCreateMenu", "RoomQuickCreateMenu", "RoomSearchFilterMenu", "OnlineRankCustomizeSelector",
     };
 
-    private bool? _editable;
+    private bool? _editable, _linear;
+
+    public bool Linear => _linear ??= HasBase("DiffSelectBase");
+
+    private string BoolProp(string name, string label)
+    {
+        var v = Model.GetIl2CppType().GetProperty(name, Inst)?.GetValue(Model);
+        return v != null && v.Unbox<bool>() ? label : "";
+    }
+
+    private bool HasBase(string name)
+    {
+        for (var t = Model.GetIl2CppType(); t != null; t = t.BaseType)
+            if (t.Name == name) return true;
+        return false;
+    }
 
     public bool Editable => _editable ??= ComputeEditable();
 
@@ -233,7 +248,7 @@ internal sealed class SelectorAccess : ICursor
         if (Family == Family.Menu)
             for (var i = 0; i < Count; i++) shown += IsShown(i) ? "1" : "0";
         return $"{Family} {Name} ({View.name}) items={Count} shown={shown} grid={GridSize} cur={CurrentIndex}" +
-               (Editable ? " editable" : "");
+               (Editable ? " editable" : "") + (Linear ? $" linear{BoolProp("HasUra", " hasUra")}{BoolProp("IsUra", " isUra")}" : "");
     }
 
     public void Select(int index)
