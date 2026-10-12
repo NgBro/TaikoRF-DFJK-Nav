@@ -1,4 +1,4 @@
-# DFJK Nav — drum-key menu navigation for Taiko no Tatsujin: Rhythm Festival (PC)
+# TnTRF-DFJK-Controls
 
 Play the whole game from the four drum keys. Menus, song select, settings, the pause menu and
 results all work with **D F J K**. Songs are unchanged: during play the keys are drum hits as always.
@@ -9,35 +9,6 @@ results all work with **D F J K**. Songs are unchanged: during play the keys are
 | **K** | next item (hold to keep moving; double tap = page forward on the song list) |
 | **J** | confirm |
 | **F** | back |
-
-## How it works on screen
-
-- Every menu is a ring: the screen's own items, then a row of extra slots shown at the bottom left
-  (on a dark strip over the game's button guide).
-- The first extra slot is always **◀ Back**. The others are the actions from the game's own guide for
-  that screen, e.g. *Help*, *News*, *Playlist*, *Retry*, *Play Options*.
-- Going past the last item (K), or before the first (D), puts focus on the extra slots, which turn
-  yellow. Press J to use one. F goes back from anywhere, so you never need to scroll to the Back slot.
-- **Song select:** the extras sit where the song list wraps around: **Back, Playlist, Genre, ◀ Tab,
-  Tab ▶**. Hold D or K to scroll at the game's own fast speed. Scrolling stops at the edge of the list,
-  so the extras are easy to land on. *Genre* moves focus to the genre column. Pick a genre with J.
-  F on the song list does what the game's own back does there: the first press moves to the genre
-  column, and a second press leaves song select.
-- **Taps are not queued.** A D/K tap that arrives while the cursor is still moving from the last one
-  is ignored, so a burst of taps never keeps scrolling after you stop.
-- **Double tap D or K** on the song list to jump a page (the game's own Left/Right). On that list a
-  single tap moves after a short pause (`[General] DoubleTapWindow`, default 0.12 s, about 8 taps per second), so the mod can tell a single tap from a double. Elsewhere taps
-  are instant.
-- **Difficulty select** is a line, not a ring. D past Easy goes to the extras (Play Options,
-  Control Type, Back), and K walks back to Easy. K on Extreme keeps pressing Right, so pressing it
-  repeatedly (or holding it) switches to the hidden Ura chart on songs that have one.
-- **Settings with values** (volume sliders, play options, calibration): J on the item starts
-  editing, D/K lower or raise the value, and J or F finishes. The page's own confirm (e.g. *Confirm and
-  Close*) is an extra slot.
-- **Screens with nothing to select** (e.g. the Rewards Map) get **◀ ▶** or **▲ ▼** slots, which scroll
-  the screen when you press J on them.
-- **During a song** the mod does nothing. Once paused (Esc) or once the song ends, the pause menu,
-  rewards and results screens work with D/F/J/K.
 
 ## Install
 
@@ -68,8 +39,6 @@ Edit `BepInEx\config\dfjk.nav.cfg` (created on first start):
 ## Uninstall
 
 - **This mod only:** delete `BepInEx\plugins\DfjkNav\`.
-- **BepInEx too:** delete `winhttp.dll`, `doorstop_config.ini`, `.doorstop_version`, `changelog.txt`,
-  `BepInEx\` and `dotnet\` from the game folder.
 
 ## Limitations
 
