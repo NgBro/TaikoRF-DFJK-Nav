@@ -28,7 +28,7 @@ Edit `BepInEx\config\dfjk.nav.cfg` (created on first start):
 
 ## Uninstall
 
-- **This mod only:** delete `BepInEx\plugins\DfjkNav\`.
+- Delete `BepInEx\plugins\DfjkNav\`.
 
 ## Limitations
 
