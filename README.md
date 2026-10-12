@@ -13,16 +13,8 @@ results all work with **D F J K**. Songs are unchanged: during play the keys are
 ## Install
 
 1. Install **BepInEx. Get it from <https://builds.bepinex.dev/projects/bepinex_be>.
-2. Start the game once and wait for the title screen; the first start takes a while.
-3. Copy `DfjkNav.dll` into `BepInEx\plugins\DfjkNav\`.
-
-To build it yourself instead (needs the .NET SDK, and step 2 done first so `BepInEx\interop` exists):
-
-```
-dotnet build src -c Release -p:GameDir="D:\SteamLibrary\steamapps\common\Taiko no Tatsujin Rhythm Festival"
-```
-
-That copies the dll into the game's plugin folder. Use `-p:DeployToGame=false` to only build.
+2. Start the game once and wait for the title screen.
+3. Copy `DfjkNav.dll` into `Taiko no Tatsujin Rhythm Festival\BepInEx\plugins\DfjkNav\`.
 
 ## Configure
 
