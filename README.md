@@ -42,18 +42,3 @@ Edit `BepInEx\config\dfjk.nav.cfg` (created on first start):
   controller popup, song select (songs, genres, tabs), difficulty select, pause, rewards, results,
   My Room, Outfits, Game Settings and Volume. Other menus use the same building blocks but haven't
   been checked one by one.
-
-## Notes for developers
-
-- **Input:** almost every menu reads input through `ControllerManager` (`GetOkDown`, `GetCancelDown`,
-  `GetDirection*`, `GetButtonX/Y/LB/RBDown`, `GetMenuDown`). The mod postfixes those with a
-  per-frame intent, and blanks the game's own meanings of D/F/J/K in menus. For example, D is "Right"
-  in song select.
-- **Cursors:** menus are `MenuSelector<T>`, `InfiniteScroller<T>` or `ScrollableGridSelector<T>` models
-  behind `UiView<T>` views. They are read through il2cpp reflection (`SelectorAccess`).
-- **Moving the cursor:** it moves with native direction steps. Each step waits until the game's index
-  changes and its scroll animation ends. Only free-form menus like the main menu get a direct
-  `Select()`.
-- **Extra slots:** these come from the visible `UiInputGuide` (groups A/B/X/Y/Menu).
-- **Song detection:** `EnsoGameManager.state` and `UiPauseMenu` decide when a song is being played.
-- **Gameplay drums:** these are read by `EnsoInput.UpdateController`, which the mod never touches.
