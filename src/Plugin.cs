@@ -16,6 +16,7 @@ public class Plugin : BasePlugin
     internal static ManualLogSource L;
     internal static ConfigEntry<bool> Enabled;
     internal static ConfigEntry<bool> Probe;
+    internal static ConfigEntry<float> DoubleTapWindow;
 
     // Menu keys (also the default drum keys: D = left rim, F/J = face, K = right rim).
     internal static Key PrevKey = Key.D, NextKey = Key.K, ConfirmKey = Key.J, BackKey = Key.F;
@@ -40,6 +41,10 @@ public class Plugin : BasePlugin
             L.LogWarning($"Keys.Back and Keys.Confirm are both {ConfirmKey}; using {ConfirmKey} as confirm only");
             BackKey = Key.None;
         }
+        DoubleTapWindow = Config.Bind("General", "DoubleTapWindow", 0.12f, new ConfigDescription(
+            "Seconds within which a second D/K tap counts as a double tap (page skip on the song list). " +
+            "On that list a single tap waits this long before moving. 0.12 = about 8 taps per second.",
+            new AcceptableValueRange<float>(0.05f, 0.5f)));
         Probe = Config.Bind("Debug", "Probe", false,
             "Log navigation decisions, every input query that returns input, and drum hits during songs. " +
             "Diagnostics only; leave off for normal play.");

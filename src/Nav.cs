@@ -41,8 +41,6 @@ internal static class Nav
     private const float AckTimeout = 0.45f;
     private const int MaxRetries = 2;
     private const float RepeatDelay = 0.35f, RepeatInterval = 0.06f, ExtraRepeatInterval = 0.3f;
-    // A second tap of the same key within this window is a page skip (song list: native Left/Right).
-    private const float DoubleTapWindow = 0.2f;
 
     private static int _frame = -1;
     private static Intent _intent;
@@ -164,7 +162,7 @@ internal static class Nav
             else if (repeat) Move(delta);
             else Tap(delta, now);
         }
-        else if (_tapPending != 0 && now - _tapTime > DoubleTapWindow)
+        else if (_tapPending != 0 && now - _tapTime > Plugin.DoubleTapWindow.Value)
         {
             // No second tap came: it was a single tap after all.
             var d = _tapPending;
@@ -270,7 +268,7 @@ internal static class Nav
         {
             var pending = _tapPending;
             _tapPending = 0;
-            if (pending == delta && now - _tapTime <= DoubleTapWindow)
+            if (pending == delta && now - _tapTime <= Plugin.DoubleTapWindow.Value)
             {
                 PageSkip(delta);
                 return;

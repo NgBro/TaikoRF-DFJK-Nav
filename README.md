@@ -26,7 +26,7 @@ results all work with **D F J K**. Songs are unchanged: during play the keys are
 - **Taps are not queued.** A D/K tap that arrives while the cursor is still moving from the last one
   is ignored, so a burst of taps never keeps scrolling after you stop.
 - **Double tap D or K** on the song list to jump a page (the game's own Left/Right). On that list a
-  single tap moves after a 0.2 s pause, so the mod can tell a single tap from a double. Elsewhere taps
+  single tap moves after a short pause (`[General] DoubleTapWindow`, default 0.12 s, about 8 taps per second), so the mod can tell a single tap from a double. Elsewhere taps
   are instant.
 - **Difficulty select** is a line, not a ring. D past Easy goes to the extras (Play Options,
   Control Type, Back), and K walks back to Easy. K on Extreme keeps pressing Right, so pressing it

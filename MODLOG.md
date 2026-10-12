@@ -122,3 +122,6 @@ Verified: K Easy->Extreme, extra K = Right passes through; D Extreme->Easy->Play
   (`DirectionDelta(Right)`, song list = 4). There a single tap is held back 0.2 s; elsewhere instant.
 - Seen working in the user's own presses (log: "tap dropped", "page skip Left/Right"); my scripted
   6-tap test overlapped with the user playing, so no clean count.
+
+## 2026-10-11 — double-tap window 0.2 s -> 0.12 s (user: ~8-9 taps/s), now `[General] DoubleTapWindow` (0.05-0.5).
+Not deployed yet: game was running and locks the dll.
