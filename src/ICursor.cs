@@ -25,7 +25,7 @@ internal interface ICursor
     void Select(int index);
     string Describe();
 
-    /// <summary>Items change a value with left/right (sliders, option pickers): F/J toggles edit mode.</summary>
+    /// <summary>Items change a value with left/right (sliders, option pickers): confirm toggles edit mode.</summary>
     bool Editable { get; }
 }
 

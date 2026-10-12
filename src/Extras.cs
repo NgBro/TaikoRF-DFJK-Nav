@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace DfjkNav;
 
-/// <summary>What an extra slot does when confirmed with F/J.</summary>
+/// <summary>What an extra slot does when confirmed.</summary>
 internal enum ExtraKind { Cancel, Ok, X, Y, Menu, TabPrev, TabNext, Left, Right, Up, Down, Genre }
 
 internal readonly struct Extra
@@ -26,7 +26,7 @@ internal static class Extras
 {
     /// <param name="cursor">
     /// The screen's known cursor, or null. Without one, screens that poll directions (e.g. the rewards
-    /// map) get arrow slots so their content can still be scrolled. With an editable one, F/J on items
+    /// map) get arrow slots so their content can still be scrolled. With an editable one, confirm on items
     /// toggles edit mode, so the page's own confirm gets a slot.
     /// </param>
     public static List<Extra> Build(ICursor cursor)
