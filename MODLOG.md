@@ -114,3 +114,11 @@ first shown item (nearest first, stop at Back, no wrap), items moved with native
 the right end keeps sending Right (Ura switch: `DiffSelectBase.HasUra/IsUra/CanSwitchUra/OnUraSwitch`).
 Verified: K Easy->Extreme, extra K = Right passes through; D Extreme->Easy->Play Options->Control Type->Back
 (stops), K back to items. Ura toggle confirmed working by the user in game (repeated K on Extreme). Song with Ura in this library: found at song-list step 6 (Taiko Music Pass tab).
+
+## 2026-10-11 — no tap queue + double-tap page skip (user request)
+- Taps arriving while the cursor travels (steps pending/awaiting ack/expected index, or selector IsBusy)
+  are dropped. Hold-repeat was already gated on !Busy.
+- Double tap (same key within 0.2 s) = native Right/Left, only where the cursor's own Right moves > 1 item
+  (`DirectionDelta(Right)`, song list = 4). There a single tap is held back 0.2 s; elsewhere instant.
+- Seen working in the user's own presses (log: "tap dropped", "page skip Left/Right"); my scripted
+  6-tap test overlapped with the user playing, so no clean count.

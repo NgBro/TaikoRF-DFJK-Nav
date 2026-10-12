@@ -41,6 +41,8 @@ internal static class Nav
     private const float AckTimeout = 0.45f;
     private const int MaxRetries = 2;
     private const float RepeatDelay = 0.35f, RepeatInterval = 0.06f, ExtraRepeatInterval = 0.3f;
+    // A second tap of the same key within this window is a page skip (song list: native Left/Right).
+    private const float DoubleTapWindow = 0.2f;
 
     private static int _frame = -1;
     private static Intent _intent;
@@ -65,6 +67,12 @@ internal static class Nav
     private static int _retries;
 
     private static bool Busy => Steps.Count > 0 || _awaitingAck;
+    /// <summary>The cursor is still travelling to where the last tap sent it.</summary>
+    private static bool Moving => Busy || _expectIndex >= 0;
+
+    // Single tap held back on page-capable lists until we know it isn't a double tap.
+    private static int _tapPending;
+    private static float _tapTime;
     private static Dir _dirNext = Dir.None, _dirPrev = Dir.None;
 
     // Hold-to-repeat for D/K. On scrollers a hold uses the game's fast-repeat scrolling.
@@ -84,6 +92,7 @@ internal static class Nav
     public static void OnSceneChanged()
     {
         SetActive(null);
+        _tapPending = 0;
         _extraFocus = -1;
         _editing = false;
     }
@@ -150,8 +159,17 @@ internal static class Nav
 
         if (prev ^ next)
         {
+            var delta = next ? +1 : -1;
             if (_editing && _active != null) _directDir = next ? Dir.Right : Dir.Left;
-            else Move(next ? +1 : -1);
+            else if (repeat) Move(delta);
+            else Tap(delta, now);
+        }
+        else if (_tapPending != 0 && now - _tapTime > DoubleTapWindow)
+        {
+            // No second tap came: it was a single tap after all.
+            var d = _tapPending;
+            _tapPending = 0;
+            MoveIfIdle(d);
         }
         if (_directDir != Dir.None) { result.Dir = _directDir; _directDir = Dir.None; }
 
@@ -243,6 +261,63 @@ internal static class Nav
         result.HeldDir = d;
         _fastRepeat = true;
         return true;
+    }
+
+    /// <summary>A fresh D/K press: a single step, or a page skip when it's the second of a double tap.</summary>
+    private static void Tap(int delta, float now)
+    {
+        if (_tapPending != 0)
+        {
+            var pending = _tapPending;
+            _tapPending = 0;
+            if (pending == delta && now - _tapTime <= DoubleTapWindow)
+            {
+                PageSkip(delta);
+                return;
+            }
+            MoveIfIdle(pending); // the other key: settle the first tap as a single step
+        }
+
+        if (PageCapable())
+        {
+            _tapPending = delta;
+            _tapTime = now;
+            return;
+        }
+        MoveIfIdle(delta);
+    }
+
+    /// <summary>
+    /// Taps are not queued: one that arrives while the cursor is still travelling is dropped, so a burst
+    /// of taps never plays out as a long scroll afterwards.
+    /// </summary>
+    private static void MoveIfIdle(int delta)
+    {
+        if (_active != null && !_active.Linear && (Moving || _active.IsBusy))
+        {
+            Plugin.Dbg($"[nav] f{_frame} tap dropped (cursor still moving)");
+            return;
+        }
+        Move(delta);
+    }
+
+    /// <summary>Lists whose own Left/Right jump further than one item (the song list pages by 4).</summary>
+    private static bool PageCapable()
+    {
+        if (_active == null || _extraFocus >= 0 || _editing || _active.Linear) return false;
+        var r = _active.DirectionDelta(Dir.Right);
+        return r != null && Math.Abs(r.Value) > 1;
+    }
+
+    private static void PageSkip(int delta)
+    {
+        if (Moving || _active.IsBusy)
+        {
+            Plugin.Dbg($"[nav] f{_frame} page skip dropped (cursor still moving)");
+            return;
+        }
+        _directDir = delta > 0 ? Dir.Right : Dir.Left;
+        Plugin.Dbg($"[nav] f{_frame} page skip {_directDir}");
     }
 
     private static void Fire(ExtraKind kind, ref Intent r)
