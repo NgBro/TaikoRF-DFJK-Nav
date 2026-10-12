@@ -12,9 +12,7 @@ results all work with **D F J K**. Songs are unchanged: during play the keys are
 
 ## Install
 
-1. Install **BepInEx 6 bleeding-edge, Unity IL2CPP x64** (tested with `6.0.0-be.788`) into the game
-   folder (`...\steamapps\common\Taiko no Tatsujin Rhythm Festival`). Get it from
-   <https://builds.bepinex.dev/projects/bepinex_be>.
+1. Install **BepInEx. Get it from <https://builds.bepinex.dev/projects/bepinex_be>.
 2. Start the game once and wait for the title screen; the first start takes a while.
 3. Copy `DfjkNav.dll` into `BepInEx\plugins\DfjkNav\`.
 
