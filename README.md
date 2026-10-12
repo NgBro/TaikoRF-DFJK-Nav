@@ -1,4 +1,4 @@
-# TnTRF-DFJK-Controls
+# TaikoRF-DFJK-Nav
 
 Play the whole game from the four drum keys. Menus, song select, settings, the pause menu and
 results all work with **D F J K**. Songs are unchanged: during play the keys are drum hits as always.
