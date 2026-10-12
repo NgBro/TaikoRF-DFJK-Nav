@@ -113,5 +113,4 @@ genre column (native cancel behaviour), F again -> Thunder Shrine. Edit-mode F n
 first shown item (nearest first, stop at Back, no wrap), items moved with native Left/Right only, and K at
 the right end keeps sending Right (Ura switch: `DiffSelectBase.HasUra/IsUra/CanSwitchUra/OnUraSwitch`).
 Verified: K Easy->Extreme, extra K = Right passes through; D Extreme->Easy->Play Options->Control Type->Back
-(stops), K back to items. Ura toggle itself not confirmed visually: the user was playing at the same time
-and closed the panel. Song with Ura in this library: found at song-list step 6 (Taiko Music Pass tab).
+(stops), K back to items. Ura toggle confirmed working by the user in game (repeated K on Extreme). Song with Ura in this library: found at song-list step 6 (Taiko Music Pass tab).
