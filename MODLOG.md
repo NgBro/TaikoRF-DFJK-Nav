@@ -101,3 +101,9 @@ Game Settings, Volume edit mode (changed and restored; left via Cancel). Drum hi
 ### Side effects on the user's save from testing
 Played MASEIJIN (Easy) 2x without hitting (fails; +coins/points), song select genre left on POP,
 tab Library. Volume unchanged (edited, then Cancel).
+
+## 2026-10-11 — dedicated Back key (user request)
+Large lists (400+ songs) made the wrap-point Back slow to reach. Keys now: J = confirm, F = back
+(config `[Keys] Confirm` / `Back`; old `Confirm2` removed, user cfg migrated by hand). F sends Cancel from
+anywhere, finishes edit mode while editing, and clears pending cursor steps. Verified: song list F ->
+genre column (native cancel behaviour), F again -> Thunder Shrine. Edit-mode F not re-tested in game.

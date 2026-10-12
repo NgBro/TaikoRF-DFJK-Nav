@@ -51,7 +51,7 @@ public class NavBehaviour : MonoBehaviour
         if (Nav.Editing)
         {
             Labels.Add("D ◀  adjust  ▶ K");
-            Labels.Add("F/J: done");
+            Labels.Add(Plugin.BackKey == Key.None ? $"{Plugin.ConfirmKey}: done" : $"{Plugin.ConfirmKey}/{Plugin.BackKey}: done");
             Overlay.Show(Labels, 0, editing: true);
             return;
         }

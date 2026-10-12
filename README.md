@@ -7,7 +7,8 @@ results all work with **D F J K**. Songs are unchanged: during play the keys are
 |---|---|
 | **D** | previous item (hold to keep moving) |
 | **K** | next item (hold to keep moving) |
-| **F** / **J** | confirm |
+| **J** | confirm |
+| **F** | back |
 
 ## How it works on screen
 
@@ -16,15 +17,17 @@ results all work with **D F J K**. Songs are unchanged: during play the keys are
 - The first extra slot is always **◀ Back**. The others are the actions from the game's own guide for
   that screen, e.g. *Help*, *News*, *Playlist*, *Retry*, *Play Options*.
 - Going past the last item (K), or before the first (D), puts focus on the extra slots, which turn
-  yellow. Press F/J to use one.
+  yellow. Press J to use one. F goes back from anywhere, so you never need to scroll to the Back slot.
 - **Song select:** the extras sit where the song list wraps around: **Back, Playlist, Genre, ◀ Tab,
   Tab ▶**. Hold D or K to scroll at the game's own fast speed. Scrolling stops at the edge of the list,
-  so the extras are easy to land on. *Genre* moves focus to the genre column. Pick a genre with F/J.
-- **Settings with values** (volume sliders, play options, calibration): F/J on the item starts
-  editing, D/K lower or raise the value, and F/J finishes. The page's own confirm (e.g. *Confirm and
+  so the extras are easy to land on. *Genre* moves focus to the genre column. Pick a genre with J.
+  F on the song list does what the game's own back does there: the first press moves to the genre
+  column, and a second press leaves song select.
+- **Settings with values** (volume sliders, play options, calibration): J on the item starts
+  editing, D/K lower or raise the value, and J or F finishes. The page's own confirm (e.g. *Confirm and
   Close*) is an extra slot.
 - **Screens with nothing to select** (e.g. the Rewards Map) get **◀ ▶** or **▲ ▼** slots, which scroll
-  the screen when you press F/J on them.
+  the screen when you press J on them.
 - **During a song** the mod does nothing. Once paused (Esc) or once the song ends, the pause menu,
   rewards and results screens work with D/F/J/K.
 
@@ -49,8 +52,9 @@ That copies the dll into the game's plugin folder. Use `-p:DeployToGame=false` t
 Edit `BepInEx\config\dfjk.nav.cfg` (created on first start):
 
 - `[General] Enabled`: turns the mod off without uninstalling it.
-- `[Keys] Previous / Next / Confirm / Confirm2`: Unity Input System key names. Change these if your
-  drum controller sends other keys.
+- `[Keys] Previous / Next / Confirm / Back`: Unity Input System key names (defaults D, K, J, F).
+  Swap `Confirm` and `Back` to confirm with F instead. Change them if your drum controller sends
+  other keys.
 - `[Debug] Probe`: logs navigation decisions to `BepInEx\LogOutput.log`. Leave it off for normal play.
 
 ## Uninstall

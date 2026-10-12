@@ -18,7 +18,7 @@ public class Plugin : BasePlugin
     internal static ConfigEntry<bool> Probe;
 
     // Menu keys (also the default drum keys: D = left rim, F/J = face, K = right rim).
-    internal static Key PrevKey = Key.D, NextKey = Key.K, ConfirmKey = Key.F, Confirm2Key = Key.J;
+    internal static Key PrevKey = Key.D, NextKey = Key.K, ConfirmKey = Key.J, BackKey = Key.F;
 
     /// <summary>Chatty navigation trace; only written when Debug.Probe is on.</summary>
     internal static void Dbg(string msg)
@@ -33,8 +33,13 @@ public class Plugin : BasePlugin
             "Navigate menus with the four drum keys. Gameplay input is never changed.");
         PrevKey = BindKey("Previous", Key.D, "Moves focus to the previous item (hold to keep moving).");
         NextKey = BindKey("Next", Key.K, "Moves focus to the next item (hold to keep moving).");
-        ConfirmKey = BindKey("Confirm", Key.F, "Confirms the focused item.");
-        Confirm2Key = BindKey("Confirm2", Key.J, "Also confirms the focused item.");
+        ConfirmKey = BindKey("Confirm", Key.J, "Confirms the focused item.");
+        BackKey = BindKey("Back", Key.F, "Goes back (same as the on-screen Back slot); while editing a value, finishes editing.");
+        if (BackKey == ConfirmKey)
+        {
+            L.LogWarning($"Keys.Back and Keys.Confirm are both {ConfirmKey}; using {ConfirmKey} as confirm only");
+            BackKey = Key.None;
+        }
         Probe = Config.Bind("Debug", "Probe", false,
             "Log navigation decisions, every input query that returns input, and drum hits during songs. " +
             "Diagnostics only; leave off for normal play.");
@@ -50,7 +55,7 @@ public class Plugin : BasePlugin
             harmony.PatchAll(typeof(EnsoProbe));
         }
         AddComponent<NavBehaviour>();
-        L.LogInfo($"Keys: previous={PrevKey} next={NextKey} confirm={ConfirmKey}/{Confirm2Key}");
+        L.LogInfo($"Keys: previous={PrevKey} next={NextKey} confirm={ConfirmKey} back={BackKey}");
         L.LogInfo("DFJK Nav loaded");
     }
 

@@ -112,13 +112,13 @@ internal static class Nav
         var kb = Keyboard.current;
         if (kb == null) return result;
 
-        result.Suppress = kb[Plugin.PrevKey].isPressed || kb[Plugin.ConfirmKey].isPressed || kb[Plugin.Confirm2Key].isPressed || kb[Plugin.NextKey].isPressed
-                          || kb[Plugin.PrevKey].wasReleasedThisFrame || kb[Plugin.ConfirmKey].wasReleasedThisFrame
-                          || kb[Plugin.Confirm2Key].wasReleasedThisFrame || kb[Plugin.NextKey].wasReleasedThisFrame;
+        result.Suppress = Touched(kb, Plugin.PrevKey) || Touched(kb, Plugin.NextKey)
+                          || Touched(kb, Plugin.ConfirmKey) || Touched(kb, Plugin.BackKey);
 
         var prev = kb[Plugin.PrevKey].wasPressedThisFrame;
         var next = kb[Plugin.NextKey].wasPressedThisFrame;
-        var ok = kb[Plugin.ConfirmKey].wasPressedThisFrame || kb[Plugin.Confirm2Key].wasPressedThisFrame;
+        var ok = kb[Plugin.ConfirmKey].wasPressedThisFrame;
+        var back = Plugin.BackKey != Key.None && kb[Plugin.BackKey].wasPressedThisFrame && !ok;
 
         // Hold D or K to keep moving.
         var now = Time.unscaledTime;
@@ -141,7 +141,7 @@ internal static class Nav
             }
         }
 
-        var any = (prev || next || ok) && !repeat;
+        var any = (prev || next || ok || back) && !repeat;
         if (any || (now >= _nextScan && !Busy && _expectIndex < 0))
         {
             _nextScan = now + 0.25f;
@@ -154,6 +154,22 @@ internal static class Nav
             else Move(next ? +1 : -1);
         }
         if (_editDir != Dir.None) { result.Dir = _editDir; _editDir = Dir.None; }
+
+        if (back)
+        {
+            if (_editing)
+            {
+                _editing = false; // leave the value as it is; back out of the page with a second press
+                Plugin.Dbg($"[nav] f{_frame} edit done (back key)");
+            }
+            else
+            {
+                _extraFocus = -1;
+                ClearSteps();
+                result.Cancel = true;
+                Plugin.Dbg($"[nav] f{_frame} back key");
+            }
+        }
 
         if (ok)
         {
@@ -170,7 +186,7 @@ internal static class Nav
             else if (_extraFocus >= 0 && _extraFocus < _extras.Count)
             {
                 var e = _extras[_extraFocus];
-                if (!e.IsDirection) _extraFocus = -1; // arrows stay focused so F/J can be tapped repeatedly
+                if (!e.IsDirection) _extraFocus = -1; // arrows stay focused so confirm can be tapped repeatedly
                 ClearSteps();
                 Fire(e.Kind, ref result);
                 Plugin.Dbg($"[nav] f{_frame} extra {e.Kind} \"{e.Label}\"");
@@ -350,6 +366,9 @@ internal static class Nav
         for (var i = 0; i < Math.Abs(dx); i++) Enqueue(dx > 0 ? Dir.Right : Dir.Left, to);
         return true;
     }
+
+    private static bool Touched(Keyboard kb, Key k) =>
+        k != Key.None && (kb[k].isPressed || kb[k].wasReleasedThisFrame);
 
     private static void PumpSteps(ref Intent result)
     {
